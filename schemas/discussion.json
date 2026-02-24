@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Discussion",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique discussion identifier"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "ID of the parent session"
+    },
+    "title": {
+      "type": "string",
+      "description": "Discussion topic or title"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Scheduled or completed discussion date"
+    },
+    "location": {
+      "type": "string",
+      "description": "Where the discussion takes place (e.g. Discord Voice Channel)"
+    }
+  }
+}

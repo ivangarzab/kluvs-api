@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Book",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer",
+      "description": "Internal book ID"
+    },
+    "title": {
+      "type": "string",
+      "description": "Book title"
+    },
+    "author": {
+      "type": "string",
+      "description": "Book author"
+    },
+    "edition": {
+      "type": "string",
+      "description": "Edition name or number"
+    },
+    "year": {
+      "type": "integer",
+      "description": "Publication year (negative for BCE)"
+    },
+    "isbn": {
+      "type": "string",
+      "description": "ISBN-10 or ISBN-13"
+    },
+    "page_count": {
+      "type": "integer",
+      "description": "Total number of pages"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Cover image URL (HTTPS)"
+    },
+    "external_google_id": {
+      "type": "string",
+      "description": "Google Books volume ID — used for deduplication on registration"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Session",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique session identifier"
+    },
+    "club_id": {
+      "type": "string",
+      "description": "ID of the club this session belongs to"
+    },
+    "book_id": {
+      "type": "integer",
+      "description": "ID of the book being read"
+    },
+    "book": {
+      "$ref": "book.json",
+      "description": "Full book details"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Target completion date (ISO 8601: YYYY-MM-DD)"
+    },
+    "discussions": {
+      "type": "array",
+      "description": "Scheduled or completed discussion events",
+      "items": { "$ref": "discussion.json" }
+    }
+  }
+}

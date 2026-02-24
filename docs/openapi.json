@@ -1,0 +1,1282 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Kluvs API",
+    "version": "0.1.0",
+    "description": "Supabase Edge Functions API for managing book clubs."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:54321/functions/v1",
+      "description": "Local Development"
+    },
+    {
+      "url": "https://<project_ref>.supabase.co/functions/v1",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/club": {
+      "get": {
+        "summary": "Retrieve Club Details",
+        "description": "Get a club by ID, or find a club by Discord channel ID + Server ID.",
+        "tags": [
+          "Club"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique identifier of the club"
+          },
+          {
+            "name": "discord_channel",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Query by Discord Channel ID (requires server_id)"
+          },
+          {
+            "name": "server_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "The Discord Server ID (required if querying by channel)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Club"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing required parameters"
+          },
+          "404": {
+            "description": "Club not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new club",
+        "description": "Creates a club, optionally with members, an active session (book + discussions), and a shame list.",
+        "tags": [
+          "Club"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "server_id": {
+                    "type": "string",
+                    "description": "Optional Discord Server ID."
+                  },
+                  "discord_channel": {
+                    "type": "string"
+                  },
+                  "founded_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "members": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Member"
+                    }
+                  },
+                  "active_session": {
+                    "type": "object",
+                    "description": "Immediately start a session for this club.",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "due_date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "book": {
+                        "$ref": "#/components/schemas/Book"
+                      },
+                      "discussions": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Discussion"
+                        }
+                      }
+                    }
+                  },
+                  "shame_list": {
+                    "type": "array",
+                    "description": "List of Member IDs to immediately add to the shame list.",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Club created successfully"
+          },
+          "404": {
+            "description": "Server not found (if server_id provided)"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update Club",
+        "description": "Update club details like name, channel, or shame list.",
+        "tags": [
+          "Club"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "discord_channel": {
+                    "type": "string"
+                  },
+                  "founded_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "server_id": {
+                    "type": "string"
+                  },
+                  "shame_list": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Club updated"
+          },
+          "404": {
+            "description": "Club not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Club",
+        "description": "Permanently remove a club and all its history.",
+        "tags": [
+          "Club"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "server_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Optional security check to ensure club belongs to server."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted successfully"
+          },
+          "404": {
+            "description": "Club not found"
+          }
+        }
+      }
+    },
+    "/member": {
+      "get": {
+        "summary": "Retrieve Member Details",
+        "description": "Get member details by internal integer ID or linked Auth User ID (UUID).",
+        "tags": [
+          "Member"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "The internal member ID."
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The linked Supabase Auth User ID."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Member"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "clubs": {
+                          "type": "array",
+                          "description": "Clubs this member belongs to, with their per-club role.",
+                          "items": {
+                            "allOf": [
+                              {
+                                "$ref": "#/components/schemas/Club"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "role": {
+                                    "type": "string",
+                                    "enum": [
+                                      "owner",
+                                      "admin",
+                                      "member"
+                                    ],
+                                    "description": "Member's role in this specific club"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "shame_clubs": {
+                          "type": "array",
+                          "description": "List of clubs where this member is currently on the shame list.",
+                          "items": {
+                            "$ref": "#/components/schemas/Club"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing both id and user_id"
+          },
+          "404": {
+            "description": "Member not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create New Member",
+        "description": "Creates a new member and links them to specific clubs.",
+        "tags": [
+          "Member"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "clubs": {
+                    "type": "array",
+                    "description": "Array of Club IDs this member belongs to.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "books_read": {
+                    "type": "integer",
+                    "default": 0
+                  },
+                  "handle": {
+                    "type": "string",
+                    "description": "Optional Discord handle or username."
+                  },
+                  "avatar_path": {
+                    "type": "string",
+                    "description": "Path to the avatar image in storage."
+                  },
+                  "id": {
+                    "type": "integer",
+                    "description": "Optional explicit ID. Omit to let the DB sequence assign one."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member created successfully"
+          },
+          "400": {
+            "description": "Missing name or invalid clubs array"
+          },
+          "404": {
+            "description": "One or more provided Club IDs do not exist"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update Member",
+        "description": "Update member details. Can add/remove club associations, and update per-club roles.",
+        "tags": [
+          "Member"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "books_read": {
+                    "type": "integer"
+                  },
+                  "handle": {
+                    "type": "string"
+                  },
+                  "avatar_path": {
+                    "type": "string"
+                  },
+                  "clubs": {
+                    "type": "array",
+                    "description": "Full list of Club IDs this member should belong to. Diffed against existing to add/remove.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "club_roles": {
+                    "type": "object",
+                    "description": "Map of club_id → role to update per-club roles. Valid roles are admin and member (owner cannot be assigned or changed via this endpoint).",
+                    "additionalProperties": {
+                      "type": "string",
+                      "enum": [
+                        "admin",
+                        "member"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member updated"
+          },
+          "400": {
+            "description": "Invalid input (e.g. clubs is not an array, or attempting to assign owner role)"
+          },
+          "404": {
+            "description": "Member not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Member",
+        "description": "Delete a member and all their data (shame list entries, club associations).",
+        "tags": [
+          "Member"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member deleted successfully"
+          },
+          "404": {
+            "description": "Member not found"
+          }
+        }
+      }
+    },
+    "/server": {
+      "get": {
+        "summary": "Retrieve servers",
+        "description": "Fetches all servers (with their clubs) OR a specific server if 'id' is provided.",
+        "tags": [
+          "Server"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {
+              "type": "string",
+              "description": "Optional Server ID. If omitted, returns all servers."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server list or specific server details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "description": "Response when ID is provided (Single Server)",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "clubs": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Club"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "description": "Response when ID is omitted (List of Servers)",
+                      "properties": {
+                        "servers": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Server"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Server not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new server",
+        "description": "Registers a new Discord server in the database.",
+        "tags": [
+          "Server"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "The Philosophers"
+                  },
+                  "id": {
+                    "type": "string",
+                    "description": "Optional Discord Snowflake ID. If omitted, a random ID is generated.",
+                    "example": "123456789012345678"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "server": {
+                      "$ref": "#/components/schemas/Server"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing required fields"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update Server",
+        "description": "Update the name of an existing server.",
+        "tags": [
+          "Server"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server updated successfully"
+          },
+          "400": {
+            "description": "Missing ID or no fields to update"
+          },
+          "404": {
+            "description": "Server not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Server",
+        "description": "Deletes a server. Fails if the server still contains clubs.",
+        "tags": [
+          "Server"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server deleted successfully"
+          },
+          "400": {
+            "description": "Cannot delete server because it has existing clubs"
+          },
+          "404": {
+            "description": "Server not found"
+          }
+        }
+      }
+    },
+    "/session": {
+      "get": {
+        "summary": "Retrieve Session",
+        "description": "Get full details for a session, including book, club, discussions, and the current shame list.",
+        "tags": [
+          "Session"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The Session ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Session"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "shame_list": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Member"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing session ID"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Session",
+        "description": "Create a new reading session for a club. Prefer `book_id` (a registered book's local DB ID). The inline `book` object is supported as a deprecated fallback.",
+        "tags": [
+          "Session"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "club_id"
+                ],
+                "properties": {
+                  "club_id": {
+                    "type": "string",
+                    "description": "The ID of the club hosting this session."
+                  },
+                  "book_id": {
+                    "type": "integer",
+                    "description": "Preferred. The local DB ID of a pre-registered book (from POST /book)."
+                  },
+                  "due_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Target date for finishing the book."
+                  },
+                  "book": {
+                    "type": "object",
+                    "description": "Deprecated. Inline book object. Use book_id instead.",
+                    "required": [
+                      "title",
+                      "author"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string"
+                      },
+                      "author": {
+                        "type": "string"
+                      },
+                      "year": {
+                        "type": "integer"
+                      },
+                      "isbn": {
+                        "type": "string"
+                      },
+                      "page_count": {
+                        "type": "integer"
+                      }
+                    }
+                  },
+                  "discussions": {
+                    "type": "array",
+                    "description": "Optional list of discussions to schedule immediately.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string"
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "location": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session created successfully"
+          },
+          "400": {
+            "description": "Missing required fields (club_id, or neither book_id nor book)"
+          },
+          "404": {
+            "description": "Club not found, or book_id not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update Session",
+        "description": "Update session details, including nested book updates and discussion management (add/update/delete).",
+        "tags": [
+          "Session"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "club_id": {
+                    "type": "string"
+                  },
+                  "due_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "book": {
+                    "type": "object",
+                    "description": "Fields to update on the associated book.",
+                    "properties": {
+                      "title": {
+                        "type": "string"
+                      },
+                      "author": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "discussions": {
+                    "type": "array",
+                    "description": "List of discussions to add (new IDs) or update (existing IDs).",
+                    "items": {
+                      "$ref": "#/components/schemas/Discussion"
+                    }
+                  },
+                  "discussion_ids_to_delete": {
+                    "type": "array",
+                    "description": "List of discussion IDs to remove.",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session updated successfully"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Session",
+        "description": "Delete a session, including its discussions and the associated book.",
+        "tags": [
+          "Session"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session deleted successfully"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      }
+    },
+    "/book": {
+      "get": {
+        "summary": "Search or retrieve books",
+        "description": "Three modes:\n- `?q=...` — Search Google Books API by query string\n- `?isbn=...` — Look up a book by ISBN via Google Books API\n- `?id=...` — Get a locally registered book by its DB ID\n",
+        "tags": [
+          "Book"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search query (min 2 chars)"
+          },
+          {
+            "name": "isbn",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ISBN to look up"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Local DB book ID"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 40
+            },
+            "description": "Max results for search (default 10, max 40)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Book(s) found"
+          },
+          "400": {
+            "description": "Missing or invalid query parameters"
+          },
+          "404": {
+            "description": "Book not found (local ID lookup)"
+          },
+          "500": {
+            "description": "Internal error or missing API key"
+          }
+        }
+      },
+      "post": {
+        "summary": "Register a book",
+        "description": "Register a book in the local database (typically after the client selects it from\na Google Books search). If `external_google_id` is provided and already exists,\nreturns the existing record with `created: false` (idempotent).\n",
+        "tags": [
+          "Book"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "author"
+                ],
+                "properties": {
+                  "external_google_id": {
+                    "type": "string",
+                    "description": "Google Books volume ID (recommended for deduplication)"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "author": {
+                    "type": "string"
+                  },
+                  "edition": {
+                    "type": "string"
+                  },
+                  "year": {
+                    "type": "integer"
+                  },
+                  "isbn": {
+                    "type": "string"
+                  },
+                  "page_count": {
+                    "type": "integer"
+                  },
+                  "image_url": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Book registered (or already exists)"
+          },
+          "400": {
+            "description": "Missing required fields"
+          },
+          "500": {
+            "description": "Database error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Server": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Discord Server Snowflake ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "clubs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Club"
+            }
+          }
+        }
+      },
+      "Club": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "discord_channel": {
+            "type": "string",
+            "description": "Discord channel ID"
+          },
+          "server_id": {
+            "type": "string",
+            "description": "Parent server ID"
+          },
+          "founded_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "members": {
+            "type": "array",
+            "description": "Club members with their per-club role.",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Member"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "owner",
+                        "admin",
+                        "member"
+                      ],
+                      "description": "Member's role in this specific club"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "active_session": {
+            "$ref": "#/components/schemas/Session"
+          },
+          "past_sessions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "due_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              }
+            }
+          },
+          "shame_list": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Array of member IDs on shame list"
+          }
+        }
+      },
+      "Member": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Internal member ID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "books_read": {
+            "type": "integer",
+            "default": 0
+          },
+          "handle": {
+            "type": "string",
+            "description": "Discord handle or username"
+          },
+          "avatar_path": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Linked Supabase Auth User ID"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "clubs": {
+            "type": "array",
+            "description": "Clubs this member belongs to, each with their per-club role.",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Club"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "owner",
+                        "admin",
+                        "member"
+                      ],
+                      "description": "Member's role in this specific club"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "club_id": {
+            "type": "string"
+          },
+          "book_id": {
+            "type": "integer"
+          },
+          "book": {
+            "$ref": "#/components/schemas/Book"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "discussions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Discussion"
+            }
+          },
+          "shame_list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Member"
+            }
+          }
+        }
+      },
+      "Book": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "edition": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer"
+          },
+          "isbn": {
+            "type": "string"
+          },
+          "page_count": {
+            "type": "integer"
+          },
+          "image_url": {
+            "type": "string",
+            "description": "Cover image URL (HTTPS)"
+          },
+          "external_google_id": {
+            "type": "string",
+            "description": "Google Books volume ID for deduplication"
+          }
+        }
+      },
+      "Discussion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "location": {
+            "type": "string",
+            "description": "Discussion location or platform"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}

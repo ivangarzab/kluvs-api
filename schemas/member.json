@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Member",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer",
+      "description": "Internal member ID"
+    },
+    "name": {
+      "type": "string",
+      "description": "Member's display name"
+    },
+    "books_read": {
+      "type": "integer",
+      "default": 0,
+      "description": "Total number of books completed"
+    },
+    "handle": {
+      "type": "string",
+      "description": "Discord handle or username"
+    },
+    "avatar_path": {
+      "type": "string",
+      "description": "Storage path to the member's avatar image"
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Linked auth user ID"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the member record was created"
+    },
+    "clubs": {
+      "type": "array",
+      "description": "Clubs this member belongs to, each with their per-club role",
+      "items": {
+        "allOf": [
+          { "$ref": "club.json" },
+          {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": ["owner", "admin", "member"],
+                "description": "Member's role in this specific club"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

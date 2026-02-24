@@ -1,0 +1,6 @@
+{
+  // Deno configuration for the kluvs-api spec repository
+  "tasks": {
+    "validate": "deno run --allow-read tools/validate-openapi.ts"
+  }
+}

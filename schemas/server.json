@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Server",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Discord Server Snowflake ID (stored as string to prevent precision loss)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Name of the Discord server"
+    },
+    "clubs": {
+      "type": "array",
+      "description": "Clubs registered in this server",
+      "items": { "$ref": "club.json" }
+    }
+  }
+}

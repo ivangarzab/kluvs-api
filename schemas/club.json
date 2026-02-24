@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Club",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique club identifier"
+    },
+    "name": {
+      "type": "string",
+      "description": "Name of the book club"
+    },
+    "discord_channel": {
+      "type": "string",
+      "description": "Discord channel ID associated with this club"
+    },
+    "server_id": {
+      "type": "string",
+      "description": "Parent Discord server ID"
+    },
+    "founded_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the club was founded (ISO 8601: YYYY-MM-DD)"
+    },
+    "members": {
+      "type": "array",
+      "description": "Club members with their per-club role",
+      "items": {
+        "allOf": [
+          { "$ref": "member.json" },
+          {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": ["owner", "admin", "member"],
+                "description": "Member's role in this specific club"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "active_session": {
+      "$ref": "session.json",
+      "description": "The current reading session, if any"
+    },
+    "past_sessions": {
+      "type": "array",
+      "description": "Completed reading sessions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "due_date": { "type": "string", "format": "date" }
+        }
+      }
+    },
+    "shame_list": {
+      "type": "array",
+      "description": "Member IDs currently on the club shame list",
+      "items": { "type": "integer" }
+    }
+  }
+}
