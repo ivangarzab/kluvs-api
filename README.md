@@ -11,50 +11,14 @@ Public API contract for the [Kluvs](https://kluvs.com) platform — a multi-serv
 | Path | Description |
 |------|-------------|
 | `openapi.json` | OpenAPI 3.0 specification (canonical source) |
-| `schemas/` | Standalone JSON Schema files per entity |
-| `endpoint-docs/` | Human-readable endpoint reference |
 | `docs/` | GitHub Pages site (Scalar API Reference at docs.kluvs.com) |
 | `tools/validate-openapi.ts` | Spec validation tool |
 
-## Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| [`/server`](endpoint-docs/server.md) | Discord server registration |
-| [`/club`](endpoint-docs/club.md) | Book club management |
-| [`/member`](endpoint-docs/member.md) | Member management |
-| [`/session`](endpoint-docs/session.md) | Reading session management |
-| [`/book`](endpoint-docs/book.md) | Book search (Google Books) and registration |
-
-## Schemas
-
-| Schema | Description |
-|--------|-------------|
-| [`Server`](schemas/server.json) | Discord server |
-| [`Club`](schemas/club.json) | Book club |
-| [`Member`](schemas/member.json) | Club member |
-| [`Session`](schemas/session.json) | Reading session |
-| [`Book`](schemas/book.json) | Book |
-| [`Discussion`](schemas/discussion.json) | Discussion event |
-| [`Error`](schemas/error.json) | Error response |
-
 ## How this repo is updated
 
-The `openapi.json` spec is generated automatically from the backend implementation.
+The spec is generated and dispatched automatically from `kluvs-backend` on every merge to `main`.
 
-```
-kluvs-backend (merge to main)
-  │
-  ▼  GitHub Action: generate-docs.ts
-  │
-  ▼  Pull request opened here with updated openapi.json
-  │
-kluvs-api (PR merged)
-  │
-  ▼  GitHub Pages rebuilds docs.kluvs.com
-```
-
-The spec in this repo reflects what the live API actually does. Do not edit `openapi.json` or `docs/openapi.json` directly — they will be overwritten by the next automated update.
+Do not edit `openapi.json` or `docs/openapi.json` directly — they will be overwritten by the next automated update.
 
 ## Validate the spec locally
 
