@@ -1,0 +1,63 @@
+#
+# Receives an updated OpenAPI spec from kluvs-backend and opens a self-PR.
+#
+# Triggered by:
+#   - repository_dispatch (spec-updated) — automated, from kluvs-backend
+#   - workflow_dispatch — manual, for testing (provide base64-encoded spec or leave blank)
+#
+
+name: Update OpenAPI Spec
+
+on:
+  repository_dispatch:
+    types: [spec-updated]
+  workflow_dispatch:
+    inputs:
+      spec_b64:
+        description: 'Base64-encoded openapi.json (optional — omit to test PR flow with current spec)'
+        required: false
+
+jobs:
+  update:
+    name: Update spec and open PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Write spec from payload
+        run: |
+          SPEC="${{ github.event.client_payload.spec || github.event.inputs.spec_b64 }}"
+          if [ -n "$SPEC" ]; then
+            echo "$SPEC" | base64 -d > openapi.json
+            cp openapi.json docs/openapi.json
+            echo "Spec written from payload."
+          else
+            echo "No spec in payload — using existing spec (testing PR flow only)."
+          fi
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Validate spec
+        run: deno task validate
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update/openapi-spec
+          base: main
+          title: 'chore: Update OpenAPI specification'
+          commit-message: 'chore: update openapi spec from kluvs-backend'
+          body: |
+            Automated spec update from kluvs-backend.
+
+            **Source commit:** ${{ github.event.client_payload.source_sha || 'manual trigger' }}
+
+            ---
+            *Opened by the [Update OpenAPI Spec](${{ github.server_url }}/${{ github.repository }}/actions/workflows/update-spec.yml) workflow.*
+          labels: automated
